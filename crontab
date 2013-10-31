@@ -1,0 +1,4 @@
+# Example line to add with crontab -e
+# Import bzr repos to git repos every 5 minutes
+*/5 *    *   *   *   /home/jani/imports/import
+

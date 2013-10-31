@@ -1,0 +1,47 @@
+#!/bin/bash
+
+# Exports bzr repos of Phablet components developed in Launchped to git repos that are easier to use by Android dev and that integrate better in the AOSP dev workflow and build process.
+
+# Steps:
+#  Update bzr repo from Launchpad
+#  Branch a fresh local bzr repo off it to optionally add changes that may interfere with the build process
+#  Export into fast-import format and pipe that to a freshly created git repo
+#  Push from that repo to the public phablet repo
+
+# Works with absolute directory names, can be run from anywhere
+# Could be run from a cronjob or some inotify hooks
+
+IMPORTDIR=/home/jani/imports
+
+#Move to ubuntu dir once it has group write permission
+GITDIR_UBUNTU=/srv/phablet.ubuntu.com/git/ubuntu/
+
+echo "Starting bzr to git importer"
+
+for d in platform-api hybris;do
+    BZRDIR=$IMPORTDIR/bzr/$d
+    GITDIR_LOCAL=$IMPORTDIR/git/$d
+    GITDIR_PUBLIC=$GITDIR_UBUNTU/$d.git
+
+    bzr pull -d $BZRDIR 2>/dev/null | grep "No revisions or tags" >/dev/null && echo "No changes in $d" && continue
+
+    #Recreate git repo from scratch
+    rm -Rf $GITDIR_LOCAL
+    mkdir -p $GITDIR_LOCAL
+
+    export GIT_DIR=$GITDIR_LOCAL
+    git init --bare
+    bzr fast-export --plain $BZRDIR | git fast-import 
+
+
+    #Remove .pc dirs from hybris, as the Android.mk files there confuse the AOSP build scripts
+    if [ $d == "hybris" ];then
+        rm -Rf $GITDIR_LOCAL.tmp
+        git clone $GITDIR_LOCAL $GITDIR_LOCAL.tmp
+        export GIT_DIR=$GITDIR_LOCAL.tmp/.git
+        git rm -r .pc
+        git commit -m "Remove .pc dirs to work around AOSP build scripts getting confused by Android.mk files there. This is not part of the upstream hybris package"
+    fi
+
+    git push --force $GITDIR_PUBLIC
+done
