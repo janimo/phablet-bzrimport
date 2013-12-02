@@ -11,7 +11,7 @@
 # Works with absolute directory names, can be run from anywhere
 # Could be run from a cronjob or some inotify hooks
 
-IMPORTDIR=/home/jani/imports
+IMPORTDIR=$(dirname $0)
 
 #Move to ubuntu dir once it has group write permission
 GITDIR_UBUNTU=/srv/phablet.ubuntu.com/git/ubuntu/
