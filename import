@@ -18,7 +18,7 @@ GITDIR_UBUNTU=/srv/phablet.ubuntu.com/git/ubuntu/
 
 echo "Starting bzr to git importer"
 
-for d in platform-api hybris;do
+for d in platform-api;do
     BZRDIR=$IMPORTDIR/bzr/$d
     GITDIR_LOCAL=$IMPORTDIR/git/$d
     GITDIR_PUBLIC=$GITDIR_UBUNTU/$d.git
@@ -32,16 +32,6 @@ for d in platform-api hybris;do
     export GIT_DIR=$GITDIR_LOCAL
     git init --bare
     bzr fast-export --plain $BZRDIR | git fast-import 
-
-
-    #Remove .pc dirs from hybris, as the Android.mk files there confuse the AOSP build scripts
-    if [ $d == "hybris" ];then
-        rm -Rf $GITDIR_LOCAL.tmp
-        git clone $GITDIR_LOCAL $GITDIR_LOCAL.tmp
-        export GIT_DIR=$GITDIR_LOCAL.tmp/.git
-        git rm -r .pc
-        git commit -m "Remove .pc dirs to work around AOSP build scripts getting confused by Android.mk files there. This is not part of the upstream hybris package"
-    fi
 
     git push --force $GITDIR_PUBLIC
 done
